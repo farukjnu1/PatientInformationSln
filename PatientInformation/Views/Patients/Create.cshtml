@@ -1,0 +1,293 @@
+﻿
+@{
+    ViewData["Title"] = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1 class="text-center">Patient Entry</h1>
+<a href="/Patients/Index">Patient Index</a>
+<form class="was-validated">
+    <div class="mb-3 row">
+        <label for="Patient" class="col-sm-2 col-form-label text-end">Patient Name<span class="text-danger">*</span></label>
+        <div class="col-sm-10">
+            <input type="text" required class="form-control" id="Patient" value="">
+            <div class="invalid-feedback">Patient name is required.</div>
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="Disease" class="col-sm-2 col-form-label text-end">Diseases Name<span class="text-danger">*</span></label>
+        <div class="col-sm-10">
+            <select class="form-select" required aria-label="" id="Disease">
+            </select>
+            <div class="invalid-feedback">Disease is required</div>
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="Epilepsy" class="col-sm-2 col-form-label text-end">Epilepsy<span class="text-danger">*</span></label>
+        <div class="col-sm-10">
+            <select class="form-select" required aria-label="" id="Epilepsy">
+            </select>
+            <div class="invalid-feedback">Epilepsy is required</div>
+        </div>
+    </div>
+    <div class="mb-3 row align-middle">
+        <label for="NCD" class="col-sm-2 col-form-label text-end pt-5">Other NCDs<span class="text-danger">*</span></label>
+        <div class="col-sm-4">
+            <select class="form-select" aria-label="" id="NCDs" multiple>
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <div class="pt-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="addNcd()">Add &gt;&gt;</button>
+            </div>
+            <div class="mt-1">
+                <button type="button" class="btn btn-outline-dark" onclick="removeNcd()">&lt;&lt; Remove</button>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <select class="form-select" aria-label="" id="NCDsAdded" multiple>
+            </select>
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="Allergies" class="col-sm-2 col-form-label text-end pt-5">Allergies<span class="text-danger">*</span></label>
+        <div class="col-sm-4">
+            <select class="form-select" aria-label="" id="Allergies" multiple>
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <div class="pt-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="addAllergy()">Add &gt;&gt;</button>
+            </div>
+            <div class="mt-1">
+                <button type="button" class="btn btn-outline-dark" onclick="removeAllergy()">&lt;&lt; Remove</button>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <select class="form-select" aria-label="" id="AllergiesAdded" multiple required>
+            </select>
+            <div class="invalid-feedback">Allergies are required</div>
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <div class="col-sm-2"></div>
+        <div class="col-sm-10">
+            <button type="button" class="btn btn-primary" onclick="addPatient()" id="btnSave">Save</button>
+            <button class="btn btn-primary" type="button" disabled="" id="btnLoading">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span role="status">Saving...</span>
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+    var baseURL = 'http://localhost:5273';
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+        getPatientMaster();
+        reset();
+    });
+
+    function getPatientMaster(){
+        var relativeURL = '/api/Patients/GetMaster';
+        $.get(baseURL + relativeURL, function (data, status) {
+            //Disease
+            var options = '<option value="">Select a Disease</option>';
+            for (var i = 0; i < data.diseases.length; i++){
+                options += '<option value="' + data.diseases[i].id + '">' + data.diseases[i].name + '</option>';
+            }
+            $('#Disease').html(options);
+            options = '';
+
+            //Epilepsy
+            options = '<option value="">Select a Epilepsy</option>';
+            for (var i = 0; i < data.epilepsies.length; i++) {
+                options += '<option value="' + data.epilepsies[i].id + '">' + data.epilepsies[i].name + '</option>';
+            }
+            $('#Epilepsy').html(options);
+
+            //NCD
+            listNcd = data.ncDs;
+            loadNCD(listNcd);
+
+            //Allergies
+            listAllergy = data.allergies;
+            loadAllergy(listAllergy);
+        });
+    }
+
+    //#region NCD
+    var listNcd = [];
+    var listNcdAdded = [];
+    function addNcd() {
+        var NCDs = $('#NCDs').val();
+        for (var i = 0; i < NCDs.length; i++) {
+            var oNcd = listNcd.filter(x => x.id == NCDs[i])[0];
+            if (oNcd != undefined) {
+                listNcdAdded.push(oNcd);
+                listNcd = listNcd.filter(x => x.id != NCDs[i]);
+            }
+        }
+        loadNCDAdded(listNcdAdded);
+        loadNCD(listNcd);
+    }
+
+    function removeNcd() {
+        var NCDsAdded = $('#NCDsAdded').val();
+        for (var i = 0; i < NCDsAdded.length; i++) {
+            var oNcdAdded = listNcdAdded.filter(x => x.id == NCDsAdded[i])[0];
+            if (oNcdAdded != undefined) {
+                listNcd.push(oNcdAdded);
+                listNcdAdded = listNcdAdded.filter(x => x.id != NCDsAdded[i]);
+            }
+        }
+        loadNCDAdded(listNcdAdded);
+        loadNCD(listNcd);
+    }
+
+    function loadNCD(list) {
+        options = '';
+        for (var i = 0; i < list.length; i++) {
+            options += '<option value="' + list[i].id + '">' + list[i].name + '</option>';
+        }
+        $('#NCDs').html(options);
+    }
+
+    function loadNCDAdded(list) {
+        options = '';
+        for (var i = 0; i < list.length; i++) {
+            options += '<option value="' + list[i].id + '">' + list[i].name + '</option>';
+        }
+        $('#NCDsAdded').html(options);
+    }
+    //#endregion
+    
+    //#region Allergy
+    var listAllergy = [];
+    var listAllergyAdded = [];
+    //AllergiesAdded
+    function addAllergy() {
+        var Allergies = $('#Allergies').val();
+        for (var i = 0; i < Allergies.length; i++) {
+            var oAllergy = listAllergy.filter(x => x.id == Allergies[i])[0];
+            if (oAllergy != undefined) {
+                listAllergyAdded.push(oAllergy);
+                listAllergy = listAllergy.filter(x => x.id != Allergies[i]);
+            }
+        }
+        loadAllergyAdded(listAllergyAdded);
+        loadAllergy(listAllergy);
+    }
+
+    function removeAllergy() {
+        var AllergiesAdded = $('#AllergiesAdded').val();
+        for (var i = 0; i < AllergiesAdded.length; i++) {
+            var oAllergyAdded = listAllergyAdded.filter(x => x.id == AllergiesAdded[i])[0];
+            if (oAllergyAdded != undefined) {
+                listAllergy.push(oAllergyAdded);
+                listAllergyAdded = listAllergyAdded.filter(x => x.id != AllergiesAdded[i]);
+            }
+        }
+        loadAllergyAdded(listAllergyAdded);
+        loadAllergy(listAllergy);
+    }
+
+    function loadAllergy(list) {
+        options = '';
+        for (var i = 0; i < list.length; i++) {
+            options += '<option value="' + list[i].id + '">' + list[i].name + '</option>';
+        }
+        $('#Allergies').html(options);
+    }
+
+    function loadAllergyAdded(list) {
+        options = '';
+        for (var i = 0; i < list.length; i++) {
+            options += '<option value="' + list[i].id + '">' + list[i].name + '</option>';
+        }
+        $('#AllergiesAdded').html(options);
+    }
+    //#endregion
+
+    function addPatient() {
+        if (!validate()) {
+            return false;
+        }
+        $('#btnSave').hide();
+        $('#btnLoading').show();
+        var NCDs = []; var Allergies = [];
+        for (var i = 0; i < listNcdAdded.length; i++) {
+            NCDs.push({ Id: 0, PatientId: 0, NcdId: listNcdAdded[i].id })
+        }
+        for (var i = 0; i < listAllergyAdded.length; i++) {
+            Allergies.push({ Id: 0, PatientId: 0, AllergyId: listAllergyAdded[i].id })
+        }
+        var entity = { Id: 0, 
+            Name: $('#Patient').val(), 
+            DiseaseId: $('#Disease').val(), 
+            EpilepsyId: $('#Epilepsy').val(),
+            NCDs: NCDs,
+            Allergies: Allergies
+        };
+        var relativeURL = '/api/Patients';
+        var URL = baseURL + relativeURL;
+        $.ajax({
+            type: "POST",
+            url: URL,
+            data: JSON.stringify(entity),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            beforeSend: function () {
+                // Show loader icon
+                console.log('beforeSend');
+            },
+            success: function (response) {
+                if (response.succeeded == true) {
+                    reset();
+                    alert('saved successfully.');
+                    location.href = '/Patients/Index';
+                }
+            }, complete: function () {
+                // Hide loader icon
+                console.log('complete');
+            },
+            failure: function (response) {
+                alert(response.responseText);
+            },
+            error: function (response) {
+                alert(response.responseText);
+            }
+        });
+    }
+
+    function reset() {
+        $('#Patient').val('');
+        $('#Disease').val('');
+        $('#Epilepsy').val('');
+        listNcdAdded = [];
+        listAllergyAdded = [];
+        loadNCDAdded(listNcdAdded);
+        loadAllergyAdded(listAllergyAdded);
+        $('#btnSave').show();
+        $('#btnLoading').hide();
+    }
+
+    function validate() {
+        var isValid = true;
+        if ($('#Patient').val() == '' || $('#Patient').val() == null || $('#Patient').val() == undefined) {
+            isValid = false;
+            $('#Patient').focus();
+        } else if ($('#Disease').val() == '' || $('#Disease').val() == null || $('#Disease').val() == undefined) {
+            isValid = false;
+            $('#Disease').focus();
+        } else if ($('#Epilepsy').val() == '' || $('#Epilepsy').val() == null || $('#Epilepsy').val() == undefined) {
+            isValid = false;
+            $('#Epilepsy').focus();
+        } else if (listAllergyAdded == null || listAllergyAdded.length == 0) { 
+            isValid = false;
+            $('#AllergiesAdded').focus();
+        }
+        return isValid;
+    }
+</script>

@@ -1,0 +1,110 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1 class="text-center">Patient Index</h1>
+<a href="/Patients/Create">Patient Entry</a>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>SN</th>
+            <th>Name</th>
+            <th>#</th>
+            <th>#</th>
+        </tr>
+    </thead>
+    <tbody id="tbody">
+
+    </tbody>
+</table>
+
+<script>
+    var baseURL = 'http://localhost:5273';
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+        getPatient();
+    });
+
+    function getPatient() {
+        var relativeURL = '/api/Patients';
+        var URL = baseURL + relativeURL;
+        $.ajax({
+            type: "GET",
+            url: URL,
+            contentType: "application/json; charset=utf-8",
+            beforeSend: function () {
+                // Show loader icon
+                console.log('beforeSend');
+            },
+            success: function (response) {
+                var listPatient = response;
+                var trS = '';
+                for (var i = 0; i < listPatient.length; i++) {
+                    var sn = i + 1;
+                    listPatient[i].name
+                    var tr = '<tr>'
+                        + '<td>'+sn+'</td>'
+                        + '<td>' + listPatient[i].name + '</td>'
+                        + '<td>'
+                        + '<button type="button" onclick="editPatient(' + listPatient[i].id + ')" class="btn btn-outline-secondary">Edit</button>'
+                        + '</td>'
+                        + '<td>'
+                        + '<button type="button" onclick="removePatient(' + listPatient[i].id + ')" class="btn btn-outline-danger">Remove</button>'
+                        +'</td>'
+                        + '</tr>';
+                    trS += tr;
+                }
+                $('#tbody').html(trS);
+            }, complete: function () {
+                // Hide loader icon
+                console.log('complete');
+            },
+            failure: function (response) {
+                alert(response.responseText);
+            },
+            error: function (response) {
+                alert(response.responseText);
+            }
+        });
+    }
+
+    function removePatient(id) {
+        var isConfirm = confirm('Are you sure to remove?');
+        if (isConfirm === true) {
+            var relativeURL = '/api/Patients/' + id;
+            var URL = baseURL + relativeURL;
+            $.ajax({
+                type: "DELETE",
+                url: URL,
+                contentType: "application/json; charset=utf-8",
+                beforeSend: function () {
+                    // Show loader icon
+                    console.log('beforeSend');
+                },
+                success: function (response) {
+                    if (response.succeeded == true) {
+                        getPatient();
+                        alert('remove successfully.');
+                    }
+                }, complete: function () {
+                    // Hide loader icon
+                    console.log('complete');
+                },
+                failure: function (response) {
+                    alert(response.responseText);
+                },
+                error: function (response) {
+                    alert(response.responseText);
+                }
+            });
+        }
+    }
+
+    function editPatient(id) { 
+        location.href = '/Patients/Edit?id=' + id;
+    }
+</script>
+
